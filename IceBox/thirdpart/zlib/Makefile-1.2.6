@@ -1,0 +1,60 @@
+BUILD_SRC_PATH:= ${shell pwd}
+
+-include ${BUILD_SRC_PATH}/.global.inc
+
+ZLIB_VER?=1.2.6
+ZLIB_NAME?=zlib-${ZLIB_VER}
+ZLIB_VER_INC=.zlib_ver.inc	
+
+ZLIB_DIR_FOLDER:=${BUILD_SRC_PATH}/${ZLIB_NAME}
+ZLIB_LIB_FOLDER:=${ZLIB_DIR_FOLDER}/${PLATFORM}/lib
+ZLIB_INC_FOLDER:=${ZLIB_DIR_FOLDER}/${PLATFORM}/include
+ZLIB_PKG_FOLDER:=${ZLIB_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+ZLIB_BIN_FOLDER:=${ZLIB_DIR_FOLDER}/${PLATFORM}/bin
+
+ZLIB_INC_CFLAGS:= -I${ZLIB_INC_FOLDER} 
+ZLIB_INC_LDFLAGS:= -L${ZLIB_LIB_FOLDER} -lz 
+
+.PHONY: all install clean
+
+all: .$(ZLIB_NAME) install
+
+.$(ZLIB_NAME):
+	@echo "================ Configure Zlib-${ZLIB_VER}" 
+
+	cd ${ZLIB_DIR_FOLDER}; \
+		AR="${AR} cr" \
+		./configure \
+		--prefix=${ZLIB_DIR_FOLDER}/${PLATFORM} \
+		--shared; \
+
+	@if [ ! -e "${ZLIB_DIR_FOLDER}/Makefile" ]; then \
+		echo "${ZLIB_NAME} is not configured!"; exit 1;\
+	fi	
+
+	@echo "================ Build Zlib-${ZLIB_VER}"
+	@${MAKE} -C ${ZLIB_DIR_FOLDER} ${SQUASH_OUTPUT}
+	@${MAKE} -C ${ZLIB_DIR_FOLDER} install ${SQUASH_OUTPUT}
+	@rm -rf $(ZLIB_VER_INC) 
+	@echo "ZLIB_VER:="$(ZLIB_VER) >> $(ZLIB_VER_INC)
+	@echo "ZLIB_NAME:="$(ZLIB_NAME) >> $(ZLIB_VER_INC)
+	@echo "ZLIB_CFLAGS:="$(ZLIB_INC_CFLAGS) >> $(ZLIB_VER_INC)
+	@echo "ZLIB_LDFLAGS:="$(ZLIB_INC_LDFLAGS) >> $(ZLIB_VER_INC)
+	@echo "ZLIB_CONFIG_PATH:="$(ZLIB_BIN_FOLDER) >> $(ZLIB_VER_INC)
+	@echo "ZLIB_PKG_PATH:="$(ZLIB_PKG_FOLDER) >> $(ZLIB_VER_INC)	
+	@echo "================ Zlib-${ZLIB_VER} Compiled!"
+	@touch $@
+
+install:
+	@echo "================ Installing Zlib-${ZLIB_VER}"
+	@mkdir -p ${OUT_DIR}/lib	
+	@mkdir -p ${OUT_DIR}/include/zlib
+	@cp -af ${ZLIB_LIB_FOLDER}/*so* ${OUT_DIR}/lib
+	@cp -af ${ZLIB_INC_FOLDER}/* ${OUT_DIR}/include/zlib
+
+clean:
+	@echo "================ MAKE Zlib-${ZLIB_VER} CLEAN"
+	@rm -rf $(ZLIB_VER_INC)	
+	@rm -rf ${BUILD_SRC_PATH}/${ZLIB_NAME}
+	@rm -rf .$(ZLIB_NAME)
+	@echo "================ Done"

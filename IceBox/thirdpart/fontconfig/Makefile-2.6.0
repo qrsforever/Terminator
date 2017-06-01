@@ -1,0 +1,79 @@
+BUILD_SRC_PATH:= ${shell pwd}
+
+-include ${BUILD_SRC_PATH}/.global.inc
+-include ${BUILD_SRC_PATH}/.zlib_ver.inc
+-include ${BUILD_SRC_PATH}/.freetype_ver.inc
+-include ${BUILD_SRC_PATH}/.libxml2_ver.inc
+
+FONTCONFIG_VER?=2.6.0
+FONTCONFIG_NAME?=fontconfig-${FONTCONFIG_VER}
+FONTCONFIG_VER_INC:=.fontconfig_ver.inc
+FONTCONFIG_ARCH=${HOST}
+
+FONTCONFIG_DIR_FOLDER:=${BUILD_SRC_PATH}/${FONTCONFIG_NAME}
+FONTCONFIG_LIB_FOLDER:=${FONTCONFIG_DIR_FOLDER}/${PLATFORM}/lib
+FONTCONFIG_INC_FOLDER:=${FONTCONFIG_DIR_FOLDER}/${PLATFORM}/include
+FONTCONFIG_PKG_FOLDER:=${FONTCONFIG_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+FONTCONFIG_BIN_FOLDER:=${FONTCONFIG_DIR_FOLDER}/${PLATFORM}/bin
+
+FONTCONFIG_INC_CFLAGS:= -I${FONTCONFIG_INC_FOLDER} -I${FONTCONFIG_INC_FOLDER}/fontconfig
+FONTCONFIG_INC_LDFLAGS:= -L${FONTCONFIG_LIB_FOLDER}/ -lfontconfig
+
+.PHONY: clean all install
+
+all: .$(FONTCONFIG_NAME) install
+
+.$(FONTCONFIG_NAME):
+	@if [ ! -e "${FONTCONFIG_DIR_FOLDER}/Makefile" ]; then \
+		echo "================ Configure FONTCONFIG"; \
+		cd $(FONTCONFIG_DIR_FOLDER); \
+		CFLAGS="${CFLAGS} ${ZLIB_CFLAGS} ${FREETYPE_CFLAGS}" \
+		LDFLAGS="${ZLIB_LDFLAGS} ${FREETYPE_LDFLAGS} -L${BUILD_SRC_PATH}/usr/lib" \
+		LIBXML2_CFLAGS="${LIBXML2_CFLAGS}" \
+		LIBXML2_LIBS="${LIBXML2_LDFLAGS}" \
+		./configure \
+		--prefix=${FONTCONFIG_DIR_FOLDER}/${PLATFORM} \
+		--host=arm-linux \
+		--disable-static \
+		--disable-docs \
+		--with-arch=${HOST} \
+		--with-freetype-config=${FREETYPE_CONFIG_PATH}/freetype-config \
+		--enable-static \
+		--enable-libxml2 \
+		--enable-shared; \
+	fi
+	
+	@if [ ! -e "${FONTCONFIG_DIR_FOLDER}/Makefile" ]; then \
+		echo "${FONTCONFIG_NAME} is not configured!"; exit 1;\
+	fi	
+
+	@echo "================ Compiling FONTCONFIG"	
+	@${MAKE} -C ${FONTCONFIG_DIR_FOLDER} ${SQUASH_OUTPUT}
+	@${MAKE} -C ${FONTCONFIG_DIR_FOLDER} install ${SQUASH_OUTPUT}
+	@rm -rf $(FONTCONFIG_VER_INC)
+	@echo "FONTCONFIG_VER:="$(FONTCONFIG_VER) >> $(FONTCONFIG_VER_INC)
+	@echo "FONTCONFIG_NAME:="$(FONTCONFIG_NAME) >> $(FONTCONFIG_VER_INC)
+	@echo "FONTCONFIG_CFLAGS:="$(FONTCONFIG_INC_CFLAGS) >> $(FONTCONFIG_VER_INC)
+	@echo "FONTCONFIG_LDFLAGS:="$(FONTCONFIG_INC_LDFLAGS) >> $(FONTCONFIG_VER_INC)
+	@echo "FONTCONFIG_CONFIG_PATH:="$(FONTCONFIG_BIN_FOLDER) >> $(FONTCONFIG_VER_INC)
+	@echo "FONTCONFIG_PKG_PATH:="$(FONTCONFIG_PKG_FOLDER) >> $(FONTCONFIG_VER_INC)
+	@echo "================ FONTCONFIG Compiled!"
+	@touch $@
+
+install: 	
+	@echo "================ Installing FONTCONFIG"
+	@mkdir -p ${OUT_DIR}/lib	
+	@mkdir -p ${OUT_DIR}/include/fontconfig
+	@mkdir -p ${OUT_DIR}/bin
+	@mkdir -p ${OUT_DIR}/etc/fontconfig
+	@cp -af ${FONTCONFIG_LIB_FOLDER}/*so* ${OUT_DIR}/lib
+	@cp -af ${FONTCONFIG_INC_FOLDER}/* ${OUT_DIR}/include/fontconfig
+	@cp -af ${FONTCONFIG_BIN_FOLDER}/* ${OUT_DIR}/bin
+	@cp -af ${FONTCONFIG_DIR_FOLDER}/${PLATFORM}/etc/fonts ${OUT_DIR}/etc/fontconfig
+
+clean:
+	@echo "================ MAKE CLEAN"
+	@rm -rf $(FONTCONFIG_VER_INC)
+	@rm -rf ${FONTCONFIG_DIR_FOLDER}
+	@rm -rf .$(FONTCONFIG_NAME)
+	@echo "================ Done"

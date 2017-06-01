@@ -1,0 +1,50 @@
+#!/bin/sh
+
+AF=4
+IFACE=eth0
+DBDIR=/var/misc/dhcp
+SCRIPTDIR=/home/hybroad/bin
+CONFFILE=/home/hybroad/share/dhclient.conf
+DEBUG=0
+
+for item in $* 
+do
+    VALUE=${item##*=}
+    case ${item%%=*} in
+        'TYPE')
+            TYPE=$VALUE
+            ;;
+        'AF')
+            AF=$VALUE
+            ;;
+        'DBDIR')
+            DBDIR=$VALUE
+            ;;
+        'DEBUG')
+            DEBUG=$VALUE
+            ;;
+        'IFACE')
+            IFACE=$VALUE
+            ;;
+        *)
+            ;;
+    esac
+done
+
+if [ -f $DBDIR/dhclient-$IFACE.conf ]; then
+    CONFFILE=$DBDIR/dhclient-$IFACE.conf
+fi
+
+if [ -f $DBDIR/dhclient-$IFACE.pid ]; then
+    echo "dhclient -$AF -d -x -pf $DBDIR/dhclient-$IFACE.pid -sf $SCRIPTDIR/dhclient.script $IFACE"
+    dhclient -$AF -d -x -cf $CONFFILE -lf $DBDIR/dhclient-$IFACE.lease -pf $DBDIR/dhclient-$IFACE.pid -sf $SCRIPTDIR/dhclient.script $IFACE 
+    rm $DBDIR/dhclient-$IFACE.pid 
+fi
+
+if [ $DEBUG -eq 1 ]; then
+    echo "dhclient -$AF -d -nw -cf $CONFFILE -lf $DBDIR/dhclient-$IFACE.lease -pf $DBDIR/dhclient-$IFACE.pid -sf $SCRIPTDIR/dhclient.script $IFACE &"
+    dhclient -$AF -d -nw -cf $CONFFILE -lf $DBDIR/dhclient-$IFACE.lease -pf $DBDIR/dhclient-$IFACE.pid -sf $SCRIPTDIR/dhclient.script $IFACE &
+else
+    echo "dhclient -$AF -nw -cf $CONFFILE -lf $DBDIR/dhclient-$IFACE.lease -pf $DBDIR/dhclient-$IFACE.pid -sf $SCRIPTDIR/dhclient.script $IFACE"
+    dhclient -$AF -nw -cf $CONFFILE -lf $DBDIR/dhclient-$IFACE.lease -pf $DBDIR/dhclient-$IFACE.pid -sf $SCRIPTDIR/dhclient.script $IFACE
+fi

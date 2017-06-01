@@ -1,0 +1,93 @@
+BUILD_SRC_PATH:= ${shell pwd}
+
+-include ${BUILD_SRC_PATH}/.global.inc
+-include ${BUILD_SRC_PATH}/.pixman_ver.inc
+-include ${BUILD_SRC_PATH}/.fontconfig_ver.inc
+-include ${BUILD_SRC_PATH}/.freetype_ver.inc
+-include ${BUILD_SRC_PATH}/.libpng_ver.inc
+-include ${BUILD_SRC_PATH}/.zlib_ver.inc
+
+CAIRO_VER?=1.10.0
+CAIRO_NAME?=cairo-${CAIRO_VER}
+CAIRO_VER_INC:=.cairo_ver.inc
+
+CAIRO_DIR_FOLDER:=${BUILD_SRC_PATH}/${CAIRO_NAME}
+CAIRO_LIB_FOLDER:=${CAIRO_DIR_FOLDER}/${PLATFORM}/lib
+CAIRO_INC_FOLDER:=${CAIRO_DIR_FOLDER}/${PLATFORM}/include
+CAIRO_PKG_FOLDER:=${CAIRO_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+CAIRO_BIN_FOLDER:=${CAIRO_DIR_FOLDER}/${PLATFORM}/bin
+
+CAIRO_INC_CFLAGS:=-D_REENTRANT -I${CAIRO_INC_FOLDER} -I${CAIRO_INC_FOLDER}/cairo
+CAIRO_INC_LDFLAGS:= -L${CAIRO_LIB_FOLDER}/ -lcairo
+
+CAIRO_CFLAGS?= -O2 -fPIC ${ZLIB_CFLAGS}
+CAIRO_LDFLAGS?= ${ZLIB_LDFLAGS}
+
+.PHONY: clean all install
+
+all: .$(CAIRO_NAME) install
+
+.$(CAIRO_NAME):
+	if [ ! -e "${CAIRO_DIR_FOLDER}/Makefile" ]; then \
+		echo "================ Configure Cairo"; \
+		cd ${CAIRO_DIR_FOLDER}; \
+		PKG_CONFIG_PATH="${LIBPNG_PKG_PATH}" \
+		CFLAGS="${CAIRO_CFLAGS}" \
+		LDFLAGS="${CAIRO_LDFLAGS}" \
+		FONTCONFIG_CFLAGS="${FONTCONFIG_CFLAGS}" \
+		FONTCONFIG_LIBS="${FONTCONFIG_LDFLAGS}" \
+		CAIRO_CFLAGS="${CAIRO_CFLAGS}" \
+		CAIRO_LIBS="${CAIRO_LDFLAGS}" \
+		FREETYPE_CFLAGS="${FREETYPE_CFLAGS}" \
+		FREETYPE_LIBS="${FREETYPE_LDFLAGS}" \
+		pixman_CFLAGS="${PIXMAN_CFLAGS}" \
+		pixman_LIBS="${PIXMAN_LDFLAGS}" \
+		png_CFLAGS="${LIBPNG_CFLAGS}" \
+		png_LIBS="${LIBPNG_LDFLAGS}" \
+		./configure \
+		--prefix=${CAIRO_DIR_FOLDER}/${PLATFORM} \
+		--host=${HOST} \
+		--enable-directfb=no \
+		--without-x  \
+		--disable-xlib  \
+		--disable-xlib-xrender  \
+		--disable-win32  \
+		--disable-gobject  \
+		--enable-ps=no \
+		--enable-png \
+		--disable-static \
+		--disable-valgrind \
+		--enable-shared; \
+	fi
+	
+	@if [ ! -e "${CAIRO_DIR_FOLDER}/Makefile" ]; then \
+		echo "${CAIRO_NAME} is not configured!"; exit 1;\
+	fi	
+
+	@echo "================ Compiling Cairo"	
+	@rm -rf ${CAIRO_LIB_FOLDER}/*.so*
+	${MAKE} -C ${CAIRO_DIR_FOLDER} ${SQUASH_OUTPUT}
+	${MAKE} -C ${CAIRO_DIR_FOLDER} install ${SQUASH_OUTPUT}
+	@rm -rf $(CAIRO_VER_INC)
+	@echo "CAIRO_VER="$(CAIRO_VER) >> $(CAIRO_VER_INC)
+	@echo "CAIRO_NAME="$(CAIRO_NAME) >> $(CAIRO_VER_INC)
+	@echo "CAIRO_CFLAGS="$(CAIRO_INC_CFLAGS) >> $(CAIRO_VER_INC)
+	@echo "CAIRO_LDFLAGS="$(CAIRO_INC_LDFLAGS) >> $(CAIRO_VER_INC)
+	@echo "CAIRO_CONFIG_PATH="$(CAIRO_BIN_FOLDER) >> $(CAIRO_VER_INC)
+	@echo "CAIRO_PKG_PATH="$(CAIRO_PKG_FOLDER) >> $(CAIRO_VER_INC)
+	@echo "================ Cairo Compiled!"
+	@touch $@
+	
+install: 
+	@echo "================ Installing Cairo"
+	@mkdir -p ${OUT_DIR}/lib	
+	@mkdir -p ${OUT_DIR}/include/cairo
+	@cp -af ${CAIRO_LIB_FOLDER}/*so* ${OUT_DIR}/lib
+	@cp -af ${CAIRO_INC_FOLDER}/* ${OUT_DIR}/include/cairo
+
+clean:
+	@echo "================ MAKE CLEAN"
+	@rm -rf $(CAIRO_VER_INC)
+	@rm -rf ${CAIRO_DIR_FOLDER}
+	@rm -f .$(CAIRO_NAME)
+	@echo "================ Done"

@@ -1,0 +1,65 @@
+BUILD_SRC_PATH:= ${shell pwd}
+
+LIBXML2_VER?=2.6.32
+LIBXML2_NAME?=libxml2-${LIBXML2_VER}
+LIBXML2_VER_INC:=.libxml2_ver.inc
+
+-include ${BUILD_SRC_PATH}/.global.inc
+
+LIBXML2_DIR_FOLDER:=${BUILD_SRC_PATH}/${LIBXML2_NAME}
+LIBXML2_LIB_FOLDER:=${LIBXML2_DIR_FOLDER}/${PLATFORM}/lib
+LIBXML2_INC_FOLDER:=${LIBXML2_DIR_FOLDER}/${PLATFORM}/include
+LIBXML2_PKG_FOLDER:=${LIBXML2_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+LIBXML2_BIN_FOLDER:=${LIBXML2_DIR_FOLDER}/${PLATFORM}/bin
+
+LIBXML2_INC_CFLAGS:= -D_REENTRANT -I${LIBXML2_INC_FOLDER} -I${LIBXML2_INC_FOLDER}/libxml2
+LIBXML2_INC_LDFLAGS:= -L${LIBXML2_LIB_FOLDER}/ -lxml2 -lm
+
+.PHONY: clean all install
+
+all: install
+
+.$(LIBXML2_NAME):
+	@if [ ! -e "${LIBXML2_DIR_FOLDER}/Makefile" ]; then \
+		echo "================ Configure LIBXML2"; \
+		cd ${LIBXML2_DIR_FOLDER}; \
+		./configure \
+		--prefix=${LIBXML2_DIR_FOLDER}/${PLATFORM} \
+		--host=${HOST} \
+		--enable-static \
+		--disable-gtk \
+		--without-python \
+		--enable-shared; \
+	fi
+	
+	@if [ ! -e "${LIBXML2_DIR_FOLDER}/Makefile" ]; then \
+		echo "${LIBXML2_NAME} is not configured!"; exit 1;\
+	fi	
+
+	@echo "================ Compiling LIBXML2"	
+	${MAKE} -C ${LIBXML2_DIR_FOLDER} ${SQUASH_OUTPUT}
+	${MAKE} -C ${LIBXML2_DIR_FOLDER} install ${SQUASH_OUTPUT}
+	@rm -rf $(LIBXML2_VER_INC)
+	@echo "LIBXML2_VER:="$(LIBXML2_VER) >> $(LIBXML2_VER_INC)
+	@echo "LIBXML2_NAME:="$(LIBXML2_NAME) >> $(LIBXML2_VER_INC)
+	@echo "LIBXML2_CFLAGS:="$(LIBXML2_INC_CFLAGS) >> $(LIBXML2_VER_INC)
+	@echo "LIBXML2_LDFLAGS:="$(LIBXML2_INC_LDFLAGS) >> $(LIBXML2_VER_INC)
+	@echo "LIBXML2_CONFIG_PATH:="$(LIBXML2_BIN_FOLDER) >> $(LIBXML2_VER_INC)
+	@echo "LIBXML2_PKG_PATH:="$(LIBXML2_PKG_FOLDER) >> $(LIBXML2_VER_INC)
+	@echo "================ LIBXML2 Compiled!"
+	@touch $@
+	
+
+install: .$(LIBXML2_NAME)
+	@echo "================ Installing LIBXML2"
+	@mkdir -p ${OUT_DIR}/lib	
+	@mkdir -p ${OUT_DIR}/include/libxml2
+	@cp -af ${LIBXML2_LIB_FOLDER}/*so* ${OUT_DIR}/lib
+	@cp -af ${LIBXML2_INC_FOLDER}/* ${OUT_DIR}/include/libxml2
+
+clean:
+	@echo "================ MAKE CLEAN"
+	@rm -rf $(LIBXML2_VER_INC)
+	@rm -rf ${LIBXML2_TAR_PATH}/${LIBXML2_NAME}	
+	@rm -rf .$(LIBXML2_NAME)
+	@echo "================ Done"

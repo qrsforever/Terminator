@@ -1,0 +1,224 @@
+#!/bin/sh
+
+if [ $UID -ne "0" ]; then
+        echo "You need to run $@ as root."
+        exit 1
+fi
+
+export LD_LIBRARY_PATH="/root:/lib:/usr/lib:/home/hybroad/lib"
+
+syslogd
+
+ifconfig eth0 up
+ifconfig gphy up
+
+if [ ! -e /dev/brcm0 ]; then
+  mknod -m a=rw /dev/brcm0 c 30 0
+fi
+
+#if [ -x /home/hybroad/bin/usbmounter ]; then
+#        /home/hybroad/bin/usbmounter & 
+#fi
+
+if [ -f /home/hybroad/share/directfb/MicroHei.ttf ]; then
+  ln -s /home/hybroad/share/directfb/MicroHei.ttf /var/MicroHei.ttf
+fi
+
+if [ -f /home/hybroad/lib/bcmdriver.ko ]; then
+  echo insmod bcmdriver
+  /sbin/rmmod bcmdriver 2>/dev/null
+  /sbin/insmod /home/hybroad/lib/bcmdriver.ko
+fi
+
+if [ -f /home/hybroad/lib/nexus.ko ]; then
+	echo insmod nexus
+	/sbin/rmmod nexus 2>/dev/null
+	/sbin/insmod /home/hybroad/lib/nexus.ko
+fi
+
+if [ -f /home/hybroad/lib/wakeup_drv.ko ]; then
+	echo insmod wakeup_drv
+	/sbin/rmmod wakeup_drv 2>/dev/null
+	/sbin/insmod /home/hybroad/lib/wakeup_drv.ko
+	if [ ! -e /dev/wake0 ]; then
+		mknod -m a=rw /dev/wake0 c 34 0
+	fi
+fi
+
+if [ -f /home/hybroad/lib/r8192u_usb.ko ]; then
+  echo insmod r8192u_usb.ko
+  /sbin/rmmod r8192u_usb.ko 2>/dev/null
+  /sbin/insmod /home/hybroad/lib/r8192u_usb.ko
+fi
+
+if [ -f /home/hybroad/lib/8192du.ko ]; then
+  echo insmod 8192du.ko
+  /sbin/rmmod 8192du.ko 2>/dev/null
+  /sbin/insmod /home/hybroad/lib/8192du.ko rtw_mac_phy_mode=1
+fi
+
+if [ -f /home/hybroad/lib/bcm_dbus.ko ]; then
+  echo insmod bcm_dbus.ko
+  /sbin/rmmod bcm_dbus.ko 2>/dev/null
+  /sbin/insmod /home/hybroad/lib/bcm_dbus.ko
+  if [ ! -L /lib/firmware/brcm ] ; then
+    ln -s /usr/local/firmware/brcm /lib/firmware/brcm
+    sync
+  fi
+fi
+
+if [ -f /home/hybroad/lib/wl.ko ]; then
+  echo insmod wl.ko
+  /sbin/rmmod wl.ko 2>/dev/null
+  /sbin/insmod /home/hybroad/lib/wl.ko
+fi
+
+if [ -f /home/hybroad/lib/tntfs.ko ]; then
+  echo insmod tntfs.ko
+  /sbin/rmmod tntfs.ko 2>/dev/null
+  /sbin/insmod /home/hybroad/lib/tntfs.ko
+fi
+
+if [ -f /home/hybroad/lib/bcmdhd.ko ]; then
+  echo insmod bcmdhd.ko
+  /sbin/rmmod bcmdhd.ko 2>/dev/null
+  /sbin/insmod /home/hybroad/lib/bcmdhd.ko firmware_path=/home/hybroad/share/wlan/fw_bcm4356a2_pcie_ag.bin nvram_path=/home/hybroad/share/wlan/bcm_dhd.nvm iface_name=wlan0
+fi
+
+__mountroothome()
+{
+    if [ -n "`cat /sys/block/mmcblk0/device/type | grep MMC`" ]; then
+	    EMMC_DEV=/dev/mmcblk0
+    elif [ -n "`cat /sys/block/mmcblk1/device/type | grep MMC`" ]; then
+        EMMC_DEV=/dev/mmcblk1
+    fi
+
+    if [ "x$EMMC_DEV" == "x" ]; then
+        ROOTHOME=`cat /proc/mtd | grep roothome | cut -f 1 -d ':' | cut -f 2 -d 'd'`
+        if [ "x$ROOTHOME" == "x" ]; then
+            return 
+        fi
+        #UBI roothome 
+        if [ -n "`cat /proc/filesystems | grep ubifs`" ]; then
+        	ubiattach /dev/ubi_ctrl -m $ROOTHOME -d 0
+        	ubimkvol /dev/ubi0 -N rootfs -m
+        	mount -t ubifs ubi0_0 /root
+        	if [ "$?" != 0 ]; then
+        		if [ "$?" != 32 ]; then
+        			echo "Mount roothome failed! ubiformat..."
+        			ubidetach /dev/ubi_ctrl -m $ROOTHOME
+        			ubiformat /dev/mtd$ROOTHOME -y
+        			ubiattach /dev/ubi_ctrl -m $ROOTHOME -d 0
+        			ubimkvol /dev/ubi0 -N rootfs -m
+        			mount -t ubifs ubi0_0 /root
+        		fi
+        	fi
+        fi
+        return
+    fi
+
+    echo "/bin/sgdisk -p $EMMC_DEV"
+    if [ -x /bin/sgdisk ]; then
+            /bin/sgdisk -p $EMMC_DEV > /var/run/hybroad_emmc_info
+    fi
+    
+    if [ -n "`cat /var/run/hybroad_emmc_info`" ]; then 
+        ROOTHOME=`cat /var/run/hybroad_emmc_info | grep roothome | awk '{printf "%d", $1}'`
+        if [ "x$ROOTHOME" == "x" ]; then
+            return 
+        fi
+        #EXT4 roothome
+        if [ -n "`cat /proc/filesystems | grep ext4`" ]; then
+        	mount -t ext4 ${EMMC_DEV}p$ROOTHOME /root
+        	if [ "$?" != 0 ]; then
+        		if [ "$?" != 32 ]; then
+        			echo "Mount roothome failed! ext4 format..."
+        			mkfs.ext4 ${EMMC_DEV}p$ROOTHOME
+        			mount -t ext4 ${EMMC_DEV}p$ROOTHOME /root
+        		fi
+        	fi
+        fi
+    fi
+}
+
+try_cnt=0
+
+while (( try_cnt <= 10 ))
+do
+    echo "try $try_cnt mount roothome"
+    __mountroothome
+    if [ -n "`cat /proc/mounts | grep \"/root\"`" ]; then
+        break;
+    fi
+    (( try_cnt = try_cnt + 1 ))
+    sleep 1
+done
+
+if test -n $runlevel ; then
+    while (( 1 ))
+    do
+        echo cd /home/hybroad/bin
+        echo runlevel = $runlevel
+        cd /home/hybroad/bin
+        case $runlevel in
+        1)
+            sleep 3 #wait for network ok
+            echo "Start icebox..."
+            ./cloud-start.elf
+            ;;
+        2|3|4|5|6)
+			echo Starting Factory test ...
+			if [ -x ./factory ]; then
+				./factory
+			else
+				./eWindow
+			fi
+			if [ "$?" = 142 ]; then
+				echo " Message: now format the roothome"
+				umount /root/
+				if [ "$?" = 0 ]; then
+					echo " Message: umount ok"
+					mkfs.ext4 $EMMC_DEV"p"$ROOTHOME
+					if [ "$?" = 0 ]; then
+							echo " Message: format ok,now reboot"
+							sleep 1
+							/home/hybroad/bin/yuxing-utility.elf -env RUNLEVEL 1
+							/bin/sync
+							/sbin/reboot
+					else
+							echo " Message: format error,try it again"
+							mkfs.ext4 $EMMC_DEV"p"$ROOTHOME
+							sleep 1
+							/home/hybroad/bin/yuxing-utility.elf -env RUNLEVEL 1
+							/bin/sync
+							/sbin/reboot
+					fi
+				else
+				echo " Message: umount error"
+				fi
+			else 
+				echo " is not 142"
+			fi
+			if [ -n `cat /var/log/messages | grep "yx_back_upgrade_progress:"` ]; then break; fi 
+            ;;
+		10)
+            echo start full load test...
+            ./factory --fullload
+            ;;
+        255)
+			echo Starting NetBoot Factory test ...
+			if [ -x ./factory ]; then
+				./factory
+			else
+				./eWindow
+			fi
+			sleep 1 
+			if [ -n `cat /var/log/messages | grep "yx_back_upgrade_progress:"` ]; then break; fi 
+		;;
+        *)
+            break;
+            ;;
+        esac
+        sleep 1
+    done
+fi

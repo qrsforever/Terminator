@@ -1,0 +1,82 @@
+BUILD_SRC_PATH:= ${shell pwd}
+
+-include ${BUILD_SRC_PATH}/.global.inc
+
+JPEG_VER?=8d
+JPEG_NAME?=jpeg-${JPEG_VER}
+JPEG_VER_INC=.libjpeg_ver.inc
+
+JPEG_DIR_FOLDER:=${BUILD_SRC_PATH}/${JPEG_NAME}
+JPEG_LIB_FOLDER:=${JPEG_DIR_FOLDER}/${PLATFORM}/lib
+JPEG_INC_FOLDER:=${JPEG_DIR_FOLDER}/${PLATFORM}/include
+JPEG_PKG_FOLDER:=${JPEG_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+JPEG_BIN_FOLDER:=${JPEG_DIR_FOLDER}/${PLATFORM}/bin
+
+JPEG_INC_CFLAGS:=-I$(JPEG_INC_FOLDER)
+JPEG_INC_LDFLAGS:=-L$(JPEG_LIB_FOLDER) -ljpeg
+
+all: jpeg-config jpeg install
+
+.PHONY: jpeg-config jpeg install clean
+
+define fn-jpeg-configure
+	echo "================ Configure JPEG-$(JPEG_VER)"; \
+	cd $(JPEG_DIR_FOLDER); \
+	./configure \
+	--host=$(HOST) \
+	--prefix=${JPEG_DIR_FOLDER}/${PLATFORM} \
+	--enable-shared \
+	--enable-silent-rules; \
+	if [ $$? -ne 0 ]; then \
+		echo -e "\n**************************************************"; \
+		echo "* ERROR: Failed to configure JPEG-$(JPEG_VER) - Aborting! *"; \
+		echo "**************************************************"; \
+		/bin/false; \
+	else \
+		touch $(JPEG_DIR_FOLDER)/.configured; \
+	fi
+endef
+
+jpeg-config:
+	@if ! [ -e "$(JPEG_DIR_FOLDER)/.configured" ]; then \
+		$(call fn-jpeg-configure); \
+	fi
+
+jpeg:
+	@echo "================ Build JPEG-$(JPEG_VER)"
+	@$(MAKE) -C $(JPEG_DIR_FOLDER) ${SQUASH_OUTPUT}
+	@$(MAKE) -C $(JPEG_DIR_FOLDER) install ${SQUASH_OUTPUT}
+	@if [ $$? -ne 0 ]; then \
+		echo -e "\n**************************************************"; \
+		echo "* ERROR: Failed to compile JPEG-$(JPEG_VER) - Aborting! *"; \
+		echo "**************************************************"; \
+		/bin/false; \
+	else \
+		echo "================ Creating JPEG-$(JPEG_VER) inc file"; \
+		rm -rf $(JPEG_VER_INC); \
+		echo "JPEG_VER:="$(JPEG_VER) >> $(JPEG_VER_INC); \
+		echo "JPEG_NAME:="$(JPEG_NAME) >> $(JPEG_VER_INC); \
+		echo "JPEG_CFLAGS:="$(JPEG_INC_CFLAGS) >> $(JPEG_VER_INC); \
+		echo "JPEG_LDFLAGS:="$(JPEG_INC_LDFLAGS) >> $(JPEG_VER_INC); \
+		if ! [ -e "$(JPEG_DIR_FOLDER)/.libs/libjpeg.a" ]; then \
+			$(MKDIR) $(JPEG_DIR_FOLDER)/.libs; \
+			$(CP) $(JPEG_DIR_FOLDER)/libjpeg.a $(JPEG_DIR_FOLDER)/.libs/. ;\
+		fi; \
+		echo "================ JPEG-$(JPEG_VER) Compiled" ; \
+	fi
+
+install: 	
+	@echo "================ Installing JPEG"
+	@mkdir -p ${OUT_DIR}/lib	
+	@mkdir -p ${OUT_DIR}/include/jpeg
+	@cp -af ${JPEG_LIB_FOLDER}/*.so* ${OUT_DIR}/lib
+	@cp -af ${JPEG_INC_FOLDER}/* ${OUT_DIR}/include/jpeg
+
+clean:
+	@echo "================ MAKE JPEG-$(JPEG_VER) CLEAN"
+	@if [ -d "$(JPEG_DIR_FOLDER)" ]; then \
+		$(MAKE) -C $(JPEG_DIR_FOLDER) clean; \
+	fi
+	@rm -f $(JPEG_DIR_FOLDER)/.configured $(JPEG_VER_INC) 
+	@rm -rf $(JPEG_DIR_FOLDER)
+	@echo "================ Done"

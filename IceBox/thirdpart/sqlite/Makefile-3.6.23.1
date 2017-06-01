@@ -1,0 +1,66 @@
+BUILD_SRC_PATH:= ${shell pwd}
+
+-include ${BUILD_SRC_PATH}/.global.inc
+
+SQLITE_VER?=3.6.23.1
+SQLITE_NAME:=sqlite-$(SQLITE_VER)
+SQLITE_VER_INC:=.sqlite_ver.inc
+
+SQLITE_DIR_FOLDER:=${BUILD_SRC_PATH}/${SQLITE_NAME}
+SQLITE_LIB_FOLDER:=${SQLITE_DIR_FOLDER}/${PLATFORM}/lib
+SQLITE_INC_FOLDER:=${SQLITE_DIR_FOLDER}/${PLATFORM}/include
+SQLITE_PKG_FOLDER:=${SQLITE_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+SQLITE_BIN_FOLDER:=${SQLITE_DIR_FOLDER}/${PLATFORM}/bin
+
+SQLITE_INC_CFLAGS:= -D_REENTRANT -I${SQLITE_INC_FOLDER}
+SQLITE_INC_LDFLAGS:= -L${SQLITE_LIB_FOLDER}/ -lsqlite3
+
+.PHONY: clean all install
+
+all: .$(SQLITE_NAME) install
+
+.$(SQLITE_NAME):
+	@if [ ! -e "${SQLITE_DIR_FOLDER}/Makefile" ]; then \
+		echo "================ Configure SQLITE"; \
+		cd ${SQLITE_DIR_FOLDER}; \
+		./configure \
+		--prefix=${SQLITE_DIR_FOLDER}/${PLATFORM} \
+		--host=${HOST} \
+		--disable-static \
+		--enable-shared \
+        ${SQUASH_OUTPUT}; \
+	fi
+	
+	@if [ ! -e "${SQLITE_DIR_FOLDER}/Makefile" ]; then \
+		echo "${SQLITE_NAME} is not configured!"; exit 1;\
+	fi	
+
+	@echo "================ Compiling SQLITE"	
+	@${MAKE} -C ${SQLITE_DIR_FOLDER} ${SQUASH_OUTPUT}
+	@${MAKE} -C ${SQLITE_DIR_FOLDER} install ${SQUASH_OUTPUT}
+
+	@rm -rf $(SQLITE_VER_INC)
+	@echo "SQLITE_VER:="$(SQLITE_VER) >> $(SQLITE_VER_INC)
+	@echo "SQLITE_NAME:="$(SQLITE_NAME) >> $(SQLITE_VER_INC)
+	@echo "SQLITE_CFLAGS:="$(SQLITE_INC_CFLAGS) >> $(SQLITE_VER_INC)
+	@echo "SQLITE_LDFLAGS:="$(SQLITE_INC_LDFLAGS) >> $(SQLITE_VER_INC)
+	@echo "SQLITE_CONFIG_PATH:="$(SQLITE_BIN_FOLDER) >> $(SQLITE_VER_INC)
+	@echo "SQLITE_PKG_PATH:="$(SQLITE_PKG_FOLDER) >> $(SQLITE_VER_INC)
+	@echo "================ SQLITE Compiled!"
+	@touch $@
+
+install: 
+	@echo "================ Installing SQLITE"
+	@mkdir -p ${OUT_DIR}/lib	
+	@mkdir -p ${OUT_DIR}/include/sqlite
+	@mkdir -p ${OUT_DIR}/bin/
+	@cp -af ${SQLITE_LIB_FOLDER}/*so* ${OUT_DIR}/lib
+	@cp -af ${SQLITE_INC_FOLDER}/* ${OUT_DIR}/include/sqlite
+	@cp -af ${SQLITE_BIN_FOLDER}/* ${OUT_DIR}/bin
+
+clean:
+	@echo "================ MAKE CLEAN"
+	@rm -rf $(SQLITE_VER_INC)
+	@rm -rf $(SQLITE_DIR_FOLDER)	
+	@rm -f .$(SQLITE_NAME)
+	@echo "================ Done"

@@ -1,0 +1,9 @@
+LIST (APPEND INCLUDES ${CMAKE_CURRENT_LIST_DIR})
+
+LIST (APPEND CLOUD_CXX_SRCS
+    ${CMAKE_CURRENT_LIST_DIR}/AuthCodeView.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/DiskFormatView.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/UpgradeView.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/DiskCopyView.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/EasysetupView.cpp
+    )

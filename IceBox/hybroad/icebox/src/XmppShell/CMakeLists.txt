@@ -1,0 +1,8 @@
+LIST (APPEND INCLUDES ${CMAKE_CURRENT_LIST_DIR})
+
+LIST (APPEND CLOUD_CXX_SRCS
+    ${CMAKE_CURRENT_LIST_DIR}/XmppAssertions.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/XmppFormatDisk.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/XmppLocalPlayer.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/XmppShell.cpp
+    )

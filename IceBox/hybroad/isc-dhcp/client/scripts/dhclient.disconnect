@@ -1,0 +1,42 @@
+#!/bin/sh
+
+AF=4
+IFACE=eth0
+DBDIR=/var/misc/dhcp
+SCRIPTDIR=/home/hybroad/bin
+CONFFILE=/home/hybroad/share/dhclient.conf
+
+for item in $* 
+do
+    VALUE=${item##*=}
+    case ${item%%=*} in
+        'AF')
+            AF=$VALUE
+            ;;
+        'IFACE')
+            IFACE=$VALUE
+            ;;
+        'DBDIR')
+            DBDIR=$VALUE
+            ;;
+        *)
+            ;;
+    esac
+done
+
+if [ -f $DBDIR/dhclient-$IFACE.conf ]; then
+    CONFFILE=$DBDIR/dhclient-$IFACE.conf
+fi
+
+if [ -f $DBDIR/dhclient-$IFACE.pid ]; then
+    echo "dhclient -$AF -x -lf $DBDIR/dhclient-$IFACE.lease -pf $DBDIR/dhclient-$IFACE.pid -sf $SCRIPTDIR/dhclient.script $IFACE"
+    dhclient -$AF -x -cf $CONFFILE -lf $DBDIR/dhclient-$IFACE.lease -pf $DBDIR/dhclient-$IFACE.pid -sf $SCRIPTDIR/dhclient.script $IFACE 
+    rm $DBDIR/dhclient-$IFACE.pid 
+
+    if [ -f $DBDIR/dhclient-$IFACE.info ]; then
+        rm $DBDIR/dhclient-$IFACE.info
+    fi
+    if [ -f $DBDIR/dhclient-$IFACE.pipe ]; then
+        rm $DBDIR/dhclient-$IFACE.pipe
+    fi
+fi

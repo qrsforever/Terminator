@@ -1,0 +1,274 @@
+
+
+#NOT finished
+
+
+
+#BUILD_SRC_PATH:= ${shell pwd}
+#
+#-include ${BUILD_SRC_PATH}/.global.inc
+#-include ${BUILD_SRC_PATH}/.zlib_ver.inc
+#
+#CURL_VER?=7.21.2
+#CURL_NAME?=libcurl-${CURL_VER}
+#CURL_VER_INC=.libcurl_ver.inc
+#
+#CURL_DIR_FOLDER:=${BUILD_SRC_PATH}/${CURL_NAME}
+#CURL_LIB_FOLDER:=${CURL_DIR_FOLDER}/${PLATFORM}/lib
+#CURL_INC_FOLDER:=${CURL_DIR_FOLDER}/${PLATFORM}/include
+#CURL_PKG_FOLDER:=${CURL_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+#CURL_BIN_FOLDER:=${CURL_DIR_FOLDER}/${PLATFORM}/bin
+#                      
+#CURL_INC_CFLAGS:=-I${CURL_INC_FOLDER}
+#CURL_INC_LDFLAGS:=-L${CURL_LIB_FOLDER} -lcurl
+#
+#.PHONY: all install clean
+#
+#all: .$(CURL_NAME) install
+#
+#.$(CURL_NAME):
+#	@echo "================ Configure CURL-${CURL_VER}"; \
+#	cd  ${CURL_DIR_FOLDER}; \
+#	CFLAGS="-DCURL_MAX_WRITE_SIZE=65536" \
+#	LDFLAGS="${LIBZLIB_LDFLAGS} ${B_OPENSSL_LDFLAGS}" \
+#	LIBS="-lssl -lcrypto" \
+#	./configure \
+#	--host=${HOST} \
+#	--prefix=${CURL_DIR_FOLDER}/${PLATFORM}
+#	--enable-nonblocking \
+#	--enable-cookies \
+#	--enable-crypto-auth \
+#	--enable-optimize \
+#	--enable-ssl \
+#	--enable-ipv6 \
+#	--enable-threaded-resolver \
+#	--disable-verbose \
+#	--enable-hidden-symbols \
+#	--enable-shared \
+#	--enable-thread \
+#	--without-libidn \
+#	--with-zlib=${LIBZLIB_PKG_PATH}/../../ \
+#	--with-pic \
+#	--with-ssl=${OPENSSL_PKG_PATH} \
+#	--disable-manual --with-random=/dev/urandom $(SQUASH_OUTPUT); \
+#
+#	@echo "================ Build PNG-${CURL_VER}"
+#	@${MAKE} -C ${CURL_DIR_FOLDER} ${SQUASH_OUTPUT}
+#	@${MAKE} -C ${CURL_DIR_FOLDER} install ${SQUASH_OUTPUT}
+#	@rm -f $(CURL_VER_INC)
+#	@echo "LIBCURL_VER:="$(CURL_VER) >> $(CURL_VER_INC)
+#	@echo "LIBCURL_NAME:="$(CURL_NAME) >> $(CURL_VER_INC)
+#	@echo "LIBCURL_CFLAGS:="$(CURL_INC_CFLAGS) >> $(CURL_VER_INC)
+#	@echo "LIBCURL_LDFLAGS:="$(CURL_INC_LDFLAGS) >> $(CURL_VER_INC)
+#	@echo "LIBCURL_CONFIG_PATH:="$(CURL_BIN_FOLDER) >> $(CURL_VER_INC)
+#	@echo "LIBCURL_PKG_PATH:="$(CURL_PKG_FOLDER) >> $(CURL_VER_INC)
+#	@echo "================ PNG-${CURL_VER} Compiled!"
+#	@touch $@
+#	@if ! [ -e "${BUILD_SRC_PATH}/${CURL_NAME}/.libs/libpng.so" ]; then \
+#		cd ${BUILD_SRC_PATH}/${CURL_NAME}/.libs/; \
+#		ln -s libpng$(CURL_LIBVER).so libpng.so; \
+#	fi
+#
+#install:
+#	@echo "================ Installing PNG-${CURL_VER}"
+#	@mkdir -p ${OUT_DIR}/lib	
+#	@mkdir -p ${OUT_DIR}/include/libpng
+#	@cp -af ${CURL_LIB_FOLDER}/*so* ${OUT_DIR}/lib
+#	@cp -af ${CURL_INC_FOLDER}/* ${OUT_DIR}/include/libpng
+#
+#clean:
+#	@echo "================ MAKE PNG-${CURL_VER} CLEAN "
+#	@rm -rf $(CURL_VER_INC)
+#	@rm -rf ${BUILD_SRC_PATH}/${CURL_NAME}
+#	@rm -rf .$(CURL_NAME)
+#	@echo "================ Done"
+#
+#
+#PWD := ${shell pwd}
+#OPENSOURCE ?= ${PWD}/../
+#APPLIBS_TOP ?= ${PWD}/../../
+#NEXUS_TOP ?= ${APPLIBS_TOP}/../nexus
+#
+#ifeq (${VERBOSE},y)
+#SQUASH_OUTPUT		=
+#else
+#SQUASH_OUTPUT		= > /dev/null 2>&1
+#endif
+#
+#NETAPP_TOP			:= ${shell pwd}/../..
+#NETAPP_INC			:= $(wildcard $(NETAPP_TOP)/libs/common.inc)
+#ifneq ($(NETAPP_INC),)
+#CONFIGURE_OPTIONS +=  \
+#	--host=${APPLIBS_TOOLCHAIN_ARCH} \
+#	--prefix=${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER} \
+#	--enable-nonblocking \
+#	--enable-cookies \
+#	--enable-crypto-auth \
+#	--enable-optimize \
+#	--disable-ssl \
+#	--enable-ipv6 \
+#	--enable-threaded-resolver \
+#	--disable-verbose \
+#	--enable-hidden-symbols \
+#	--enable-shared \
+#	--enable-thread \
+#	--without-libidn \
+#	--with-pic \
+#	--disable-manual \
+#	--with-random=/dev/urandom
+#include $(NETAPP_INC)
+#else
+#ifeq ($(ANDROID_BUILD), y)
+#else
+#include ${OPENSOURCE}/common/common.inc
+#-include ${OPENSOURCE}/zlib/libzlib_ver.inc
+#B_REFSW_OBJ_DIR ?= obj.${NEXUS_PLATFORM}
+#B_REFSW_OBJ_ROOT ?= ${NEXUS_TOP}/../${B_REFSW_OBJ_DIR}
+#-include $(B_REFSW_OBJ_ROOT)/BSEAV/lib/openssl/openssl_ver.inc
+#endif
+#
+#CURL_VER?=7.21.2
+#CURL_NAME?=curl-${CURL_VER}
+#CURL_TAR_PATH:=${PWD}
+#CURL_SOURCE_TARBALL:=$(CURL_NAME).tar.gz
+#CURL_CFLAGS?= -O2 -fPIC
+#
+#ZLIB_FOLDER:=${LIBZLIB_CONFIG_PATH}/../../
+#
+#CURL_LIB_FOLDER:=${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}/lib
+#CURL_INC_FOLDER:=${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}/include
+#CURL_PKG_FOLDER:=${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}/lib/pkgconfig
+#CURL_BIN_FOLDER:=${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}/bin
+#
+#B_OPENSSL_NAME?=openssl-${B_OPENSSL_VER}
+#OPENSSL_PKG_PATH:=${APPLIBS_TARGET_DIR}
+#
+#CURL_INC_CFLAGS:= -D_REENTRANT -I${CURL_INC_FOLDER}/curl -I${CURL_INC_FOLDER} -DCURL_MAX_WRITE_SIZE=65536 ${LIBZLIB_CFLAGS} ${B_OPENSSL_CFLAGS}
+#CURL_INC_LDFLAGS:= -L${CURL_LIB_FOLDER}/ -lcurl ${LIBZLIB_LDFLAGS} ${B_OPENSSL_LDFLAGS}
+#
+#SHELL:=/bin/bash
+#
+#.PHONY: clean all bin-target target-clean
+#
+#all: .source .${B_OPENSSL_NAME} .$(CURL_NAME) install
+#
+#.source:
+#	@if [ ! -e "${CURL_TAR_PATH}/${CURL_NAME}" ]; then \
+#		echo "================ Extracting Curl tarball"; \
+#		if [ -e "${CURL_TAR_PATH}/${CURL_SOURCE_TARBALL}" ]; then \
+#			tar -xzf ${CURL_TAR_PATH}/${CURL_SOURCE_TARBALL} -C ${CURL_TAR_PATH}; \
+#			cp -af ${CURL_TAR_PATH}/broadcom_files/${CURL_VER}/* ${CURL_TAR_PATH}/${CURL_NAME}; \
+#		else \
+#			echo "Tarball ${CURL_TAR_PATH}/${CURL_SOURCE_TARBALL} is missing"; exit 1;\
+#		fi; \
+#	fi
+#	@mkdir -p ${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}
+#	@touch $@
+#
+#.${B_OPENSSL_NAME}:
+#	@echo "================ Check OpenSSL"
+#	@if [[ -z "${B_OPENSSL_VER}" || -z "${B_OPENSSL_NAME}" || -z "${B_OPENSSL_LDFLAGS}" || ! -e "${B_OPENSSL_PATH}" ]]; then \
+#               echo "OpenSSL not built OR the openssl_ver.inc missing"; \
+#               exit 1; \
+#       fi
+#	@cp -af ${B_OPENSSL_PATH}/ssl/* ${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}
+#	@echo "================ OpenSSL done"
+#	@touch $@
+#
+#ifeq ($(ANDROID_BUILD), y)
+#APPLIBS_TOOLCHAIN_ARCH := mipsel-linux
+#
+#.configure: .$(CURL_NAME)_configure
+#
+#.$(CURL_NAME)_configure: .source
+#	if [ ! -e "${CURL_TAR_PATH}/${CURL_NAME}/Makefile" -o -z "${shell grep 'CC \= ' ${CURL_TAR_PATH}/${CURL_NAME}/Makefile |grep ${APPLIBS_TOOLCHAIN_ARCH}}" ]; then \
+#		echo "================ Configure Curl"; \
+#		cd ${CURL_TAR_PATH}/${CURL_NAME}; \
+#		CFLAGS="-DCURL_MAX_WRITE_SIZE=65536" ./configure \
+#		--host=${APPLIBS_TOOLCHAIN_ARCH} \
+#		--prefix=${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER} \
+#		--enable-nonblocking \
+#		--enable-cookies \
+#		--enable-crypto-auth \
+#		--enable-optimize \
+#		--enable-ipv6 \
+#                --enable-threaded-resolver \
+#		--disable-verbose \
+#		--enable-hidden-symbols \
+#		--enable-shared \
+#		--enable-thread \
+#		--without-libidn \
+#		--with-pic \
+#		--disable-manual --with-random=/dev/urandom \
+#		ac_cv_header_ifaddrs_h=no $(SQUASH_OUTPUT) \
+#	fi
+#endif
+#
+#.$(CURL_NAME):
+#	@if [ ! -e "${CURL_TAR_PATH}/${CURL_NAME}/Makefile" -o -z "${shell grep 'CC \= ' ${CURL_TAR_PATH}/${CURL_NAME}/Makefile |grep ${APPLIBS_TOOLCHAIN_ARCH}}" ]; then \
+#		echo "================ Configure Curl"; \
+#		cd ${CURL_TAR_PATH}/${CURL_NAME}; \
+#		CFLAGS="-DCURL_MAX_WRITE_SIZE=65536" \
+#        LDFLAGS="${LIBZLIB_LDFLAGS} ${B_OPENSSL_LDFLAGS}" \
+#		LIBS="-lssl -lcrypto" \
+#        CC="${OPENSOURCE_CCACHE} ${CC}" \
+#        ./configure \
+#		--host=${APPLIBS_TOOLCHAIN_ARCH} \
+#		--prefix=${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER} \
+#		--enable-nonblocking \
+#		--enable-cookies \
+#		--enable-crypto-auth \
+#		--enable-optimize \
+#		--enable-ssl \
+#		--enable-ipv6 \
+#		--enable-threaded-resolver \
+#		--disable-verbose \
+#		--enable-hidden-symbols \
+#		--enable-shared \
+#		--enable-thread \
+#		--without-libidn \
+#        --with-zlib=${LIBZLIB_PKG_PATH}/../../ \
+#		--with-pic \
+#        --with-ssl=${OPENSSL_PKG_PATH} \
+#		--disable-manual --with-random=/dev/urandom $(SQUASH_OUTPUT); \
+#	fi
+#
+#	@echo "================ Build Curl"
+#	@${MAKE} ${MAKE_OPTIONS} -C ${CURL_TAR_PATH}/${CURL_NAME} ${MAKE_SUFFIX} $(SQUASH_OUTPUT)
+#	@${MAKE} -C ${CURL_TAR_PATH}/${CURL_NAME} install ${MAKE_SUFFIX} $(SQUASH_OUTPUT)
+#	@sed -i 's/URL/\#URL/g' ${CURL_PKG_FOLDER}/libcurl.pc
+#	@rm -rf libcurl_ver.inc
+#	@echo "LIBCURL_VER:="$(CURL_VER) >> libcurl_ver.inc
+#	@echo "LIBCURL_NAME:="$(CURL_NAME) >> libcurl_ver.inc
+#	@echo "LIBCURL_CFLAGS:="$(CURL_INC_CFLAGS) >> libcurl_ver.inc
+#	@echo "LIBCURL_LDFLAGS:="$(CURL_INC_LDFLAGS) >> libcurl_ver.inc
+#	@echo "LIBCURL_CONFIG_PATH:="$(CURL_BIN_FOLDER) >> libcurl_ver.inc
+#	@echo "LIBCURL_PKG_PATH:="$(CURL_PKG_FOLDER) >> libcurl_ver.inc	
+#	@echo "================ Curl Compiled!"
+#	@touch $@
+#
+#install:
+#	@echo "================ Installing Curl"
+#	@mkdir -p ${APPLIBS_TARGET_LIB_DIR}
+#	@mkdir -p ${APPLIBS_TARGET_INC_DIR}
+#	@mkdir -p ${APPLIBS_TARGET_BIN_DIR}/curl
+#	@cp -af ${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}/lib/*.so* ${APPLIBS_TARGET_LIB_DIR}
+#	@cp -af ${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}/lib/*.a ${APPLIBS_TARGET_LIB_DIR}
+#	@cp -af ${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}/include/* ${APPLIBS_TARGET_INC_DIR}
+#	@cp -af ${CURL_TAR_PATH}/${CURL_NAME}/${NEXUS_PLATFORM}${LOWER_BCHP_VER}/bin/* ${APPLIBS_TARGET_BIN_DIR}/curl
+#	@cp -af $(CURL_TAR_PATH)/$(CURL_NAME)/lib/.libs/libcurl.so* ${APPLIBS_TARGET_LIB_DIR}
+#
+#target-clean:
+#	@echo "================ Removing target CURL binaries"
+#	@rm -rf ${APPLIBS_TARGET_LIB_DIR}/libcurl.so*
+#	@rm -rf ${APPLIBS_TARGET_BIN_DIR}/curl
+#	@rm -rf ${APPLIBS_TARGET_INC_DIR}/curl
+#	@rm -f .source .$(CURL_NAME)
+#
+#clean: target-clean
+#	@echo "================ Removing CURL directories"
+#	@rm -rf libcurl_ver.inc
+#	@rm -rf ${CURL_TAR_PATH}/${CURL_NAME}
+#	@rm -rf .source .$(CURL_NAME) .openssl*
+#	@echo "================ Done"
+#endif

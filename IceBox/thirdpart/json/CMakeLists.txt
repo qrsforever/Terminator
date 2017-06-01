@@ -1,0 +1,11 @@
+LIST (APPEND INCLUDES 
+    ${CMAKE_CURRENT_LIST_DIR}/include
+    )
+
+LIST (APPEND LIBS_DIRECTORIES
+    # ${CMAKE_CURRENT_LIST_DIR}/lib
+    )
+
+LIST (APPEND LIBRARIES 
+    # json
+    )    

@@ -1,0 +1,71 @@
+BUILD_SRC_PATH:= ${shell pwd}
+
+-include ${BUILD_SRC_PATH}/.global.inc
+-include ${BUILD_SRC_PATH}/.zlib_ver.inc
+-include ${BUILD_SRC_PATH}/.libpng_ver.inc
+
+PIXMAN_VER?=0.32.6
+PIXMAN_NAME:=pixman-$(PIXMAN_VER)
+PIXMAN_VER_INC:=.pixman_ver.inc
+
+PIXMAN_DIR_FOLDER:=${BUILD_SRC_PATH}/${PIXMAN_NAME}
+PIXMAN_LIB_FOLDER:=${PIXMAN_DIR_FOLDER}/${PLATFORM}/lib
+PIXMAN_INC_FOLDER:=${PIXMAN_DIR_FOLDER}/${PLATFORM}/include
+PIXMAN_PKG_FOLDER:=${PIXMAN_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+PIXMAN_BIN_FOLDER:=${PIXMAN_DIR_FOLDER}/${PLATFORM}/bin
+
+PIXMAN_INC_CFLAGS:= -D_REENTRANT -I${PIXMAN_INC_FOLDER} -I${PIXMAN_INC_FOLDER}/pixman-1
+PIXMAN_INC_LDFLAGS:= -L${PIXMAN_LIB_FOLDER} -lpixman-1
+
+PIXMAN_CFLAGS?= -O2 -fPIC ${ZLIB_CFLAGS}
+PIXMAN_LDFLAGS?=${ZLIB_LDFLAGS} ${LIBPNG_LDFLAGS}
+
+.PHONY: clean all install
+
+all: .$(PIXMAN_NAME) install
+
+.$(PIXMAN_NAME):
+	@if [ ! -e "${PIXMAN_DIR_FOLDER}/Makefile" ]; then \
+		echo "================ Configure PIXMAN"; \
+		cd ${PIXMAN_DIR_FOLDER}; \
+		CFLAGS="${PIXMAN_CFLAGS}" \
+		LDFLAGS="${PIXMAN_LDFLAGS}" \
+		./configure \
+		--prefix=${PIXMAN_DIR_FOLDER}/${PLATFORM} \
+		--host=${HOST} \
+		--disable-static \
+		--disable-gtk \
+		--enable-shared \
+		--enable-mips32r2; \
+	fi
+	
+	@if [ ! -e "${PIXMAN_DIR_FOLDER}/Makefile" ]; then \
+		echo "${PIXMAN_NAME} is not configured!"; exit 1;\
+	fi	
+
+	@echo "================ Compiling PIXMAN"	
+	${MAKE} -C ${PIXMAN_DIR_FOLDER} ${SQUASH_OUTPUT}
+	${MAKE} -C ${PIXMAN_DIR_FOLDER} install ${SQUASH_OUTPUT}
+	@rm -rf $(PIXMAN_VER_INC)
+	@echo "PIXMAN_VER:="$(PIXMAN_VER) >> $(PIXMAN_VER_INC)
+	@echo "PIXMAN_NAME:="$(PIXMAN_NAME) >> $(PIXMAN_VER_INC)
+	@echo "PIXMAN_CFLAGS:="$(PIXMAN_INC_CFLAGS) >> $(PIXMAN_VER_INC)
+	@echo "PIXMAN_LDFLAGS:="$(PIXMAN_INC_LDFLAGS) >> $(PIXMAN_VER_INC)
+	@echo "PIXMAN_CONFIG_PATH:="$(PIXMAN_BIN_FOLDER) >> $(PIXMAN_VER_INC)
+	@echo "PIXMAN_PKG_PATH:="$(PIXMAN_PKG_FOLDER) >> $(PIXMAN_VER_INC)
+	@echo "================ PIXMAN Compiled!"
+	@touch $@
+
+install: 
+	@echo "================ Installing PIXMAN"
+	@mkdir -p ${OUT_DIR}/lib	
+	@mkdir -p ${OUT_DIR}/include/zlib
+	@cp -af ${PIXMAN_LIB_FOLDER}/*so* ${OUT_DIR}/lib
+	@cp -af ${PIXMAN_INC_FOLDER}/* ${OUT_DIR}/include/zlib
+
+clean:
+	@echo "================ MAKE CLEAN"
+	@rm -rf $(PIXMAN_VER_INC)
+	@rm -rf ${PIXMAN_TAR_PATH}/${PIXMAN_NAME}
+	@rm -rf .$(PIXMAN_NAME)
+	@echo "================ Done"

@@ -1,0 +1,20 @@
+INCLUDE (${CMAKE_CURRENT_LIST_DIR}/Activity/CMakeLists.txt)
+INCLUDE (${CMAKE_CURRENT_LIST_DIR}/Picture/CMakeLists.txt)
+INCLUDE (${CMAKE_CURRENT_LIST_DIR}/Slide/CMakeLists.txt)
+INCLUDE (${CMAKE_CURRENT_LIST_DIR}/Thumbnail/CMakeLists.txt)
+INCLUDE (${CMAKE_CURRENT_LIST_DIR}/Widgets/CMakeLists.txt)
+
+LIST (APPEND INCLUDES ${CMAKE_CURRENT_LIST_DIR})
+
+LIST (APPEND CLOUD_CXX_SRCS
+    ${CMAKE_CURRENT_LIST_DIR}/DesktopScreen.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/DisplayScreen.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/GraphicsAssertions.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/GraphicsLayout.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/ImageView.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/LCDLayer.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/LCDScreen.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/TVLayer.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/TVScreen.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/TextView.cpp
+    )

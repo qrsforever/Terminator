@@ -1,0 +1,57 @@
+BUILD_SRC_PATH:= ${shell pwd}
+
+-include ${BUILD_SRC_PATH}/.global.inc
+
+FREETYPE_VER?=2.4.9
+FREETYPE_NAME?=freetype-${FREETYPE_VER}
+FREETYPE_VER_INC:=.freetype_ver.inc
+
+FREETYPE_DIR_FOLDER:=${BUILD_SRC_PATH}/${FREETYPE_NAME}
+FREETYPE_LIB_FOLDER:=${FREETYPE_DIR_FOLDER}/${PLATFORM}/lib
+FREETYPE_INC_FOLDER:=${FREETYPE_DIR_FOLDER}/${PLATFORM}/include
+FREETYPE_PKG_FOLDER:=${FREETYPE_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+FREETYPE_BIN_FOLDER:=${FREETYPE_DIR_FOLDER}/${PLATFORM}/bin
+
+FREETYPE_INC_CFLAGS:= -I${FREETYPE_INC_FOLDER} -I${FREETYPE_INC_FOLDER}/freetype2
+FREETYPE_INC_LDFLAGS:= -L${FREETYPE_LIB_FOLDER}/ -lfreetype
+
+.PHONY: all install clean
+
+all: install
+
+.$(FREETYPE_NAME):
+	@echo "================ Configure Freetype-${FREETYPE_VER}"
+	@cd ${FREETYPE_DIR_FOLDER}; \
+	chmod u+w Makefile; \
+	./configure \
+	--host=${HOST} \
+	--prefix=${FREETYPE_DIR_FOLDER}/${PLATFORM} \
+	--enable-static \
+	--enable-shared;
+	@echo "================ Build Freetype-${FREETYPE_VER}"
+	@${MAKE} -C ${FREETYPE_DIR_FOLDER} ${SQUASH_OUTPUT}
+	@${MAKE} -C ${FREETYPE_DIR_FOLDER} install ${SQUASH_OUTPUT}
+	@rm -rf $(FREETYPE_VER_INC)
+	@echo "FREETYPE_VER:="$(FREETYPE_VER) >> $(FREETYPE_VER_INC)
+	@echo "FREETYPE_NAME:="$(FREETYPE_NAME) >> $(FREETYPE_VER_INC)
+	@echo "FREETYPE_CFLAGS:="$(FREETYPE_INC_CFLAGS) >> $(FREETYPE_VER_INC)
+	@echo "FREETYPE_LDFLAGS:="$(FREETYPE_INC_LDFLAGS) >> $(FREETYPE_VER_INC)
+	@echo "FREETYPE_CONFIG_PATH:="$(FREETYPE_BIN_FOLDER) >> $(FREETYPE_VER_INC)
+	@echo "FREETYPE_PKG_PATH:="$(FREETYPE_PKG_FOLDER) >> $(FREETYPE_VER_INC)
+	@echo "================ Freetype-${FREETYPE_VER} Compiled!"
+	@touch $@
+
+install:.$(FREETYPE_NAME)
+	@echo "================ Installing Freetype-${FREETYPE_VER}"
+	@mkdir -p ${OUT_DIR}/lib	
+	@mkdir -p ${OUT_DIR}/include/freetype
+	@cp -af ${FREETYPE_LIB_FOLDER}/*so* ${OUT_DIR}/lib
+	@cp -af ${FREETYPE_INC_FOLDER}/* ${OUT_DIR}/include/freetype
+
+clean:
+	@echo "================ MAKE Freetype-${FREETYPE_VER} CLEAN"
+	@rm -rf $(FREETYPE_VER_INC)
+	@rm -rf ${BUILD_SRC_PATH}/${FREETYPE_NAME}
+	@rm -rf .$(FREETYPE_NAME)
+	@echo "================ Done"
+

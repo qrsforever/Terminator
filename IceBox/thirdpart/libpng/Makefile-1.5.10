@@ -1,0 +1,64 @@
+BUILD_SRC_PATH:= ${shell pwd}
+
+-include ${BUILD_SRC_PATH}/.global.inc
+-include ${BUILD_SRC_PATH}/.zlib_ver.inc
+
+PNG_VER?=1.5.10
+PNG_NAME?=libpng-${PNG_VER}
+PNG_VER_INC=.libpng_ver.inc
+
+PNG_DIR_FOLDER:=${BUILD_SRC_PATH}/${PNG_NAME}
+PNG_LIB_FOLDER:=${PNG_DIR_FOLDER}/${PLATFORM}/lib
+PNG_INC_FOLDER:=${PNG_DIR_FOLDER}/${PLATFORM}/include
+PNG_PKG_FOLDER:=${PNG_DIR_FOLDER}/${PLATFORM}/lib/pkgconfig
+PNG_BIN_FOLDER:=${PNG_DIR_FOLDER}/${PLATFORM}/bin
+                     
+PNG_INC_CFLAGS:=-I${PNG_INC_FOLDER}
+PNG_INC_LDFLAGS:=-L${PNG_LIB_FOLDER} -lpng
+
+PNG_LIBVER:=$(shell echo ${PNG_VER} | egrep -o "[0-9+]\.[0-9+]" | sed 's/\.//')
+
+.PHONY: all install clean
+
+all: .$(PNG_NAME) install
+
+.$(PNG_NAME):
+	@echo "================ Configure PNG-${PNG_VER}"; \
+	cd  ${PNG_DIR_FOLDER}; \
+	LDFLAGS="${LDFLAGS} ${ZLIB_LDFLAGS}" \
+	CFLAGS="${CFLAGS} ${ZLIB_CFLAGS}" \
+	./configure \
+	--host=${HOST} \
+	--prefix=${PNG_DIR_FOLDER}/${PLATFORM} \
+	--enable-static --enable-shared;
+
+	@echo "================ Build PNG-${PNG_VER}"
+	@${MAKE} -C ${PNG_DIR_FOLDER} ${SQUASH_OUTPUT}
+	@${MAKE} -C ${PNG_DIR_FOLDER} install ${SQUASH_OUTPUT}
+	@rm -f $(PNG_VER_INC)
+	@echo "LIBPNG_VER:="$(PNG_VER) >> $(PNG_VER_INC)
+	@echo "LIBPNG_NAME:="$(PNG_NAME) >> $(PNG_VER_INC)
+	@echo "LIBPNG_CFLAGS:="$(PNG_INC_CFLAGS) >> $(PNG_VER_INC)
+	@echo "LIBPNG_LDFLAGS:="$(PNG_INC_LDFLAGS) >> $(PNG_VER_INC)
+	@echo "LIBPNG_CONFIG_PATH:="$(PNG_BIN_FOLDER) >> $(PNG_VER_INC)
+	@echo "LIBPNG_PKG_PATH:="$(PNG_PKG_FOLDER) >> $(PNG_VER_INC)
+	@echo "================ PNG-${PNG_VER} Compiled!"
+	@touch $@
+	@if ! [ -e "${BUILD_SRC_PATH}/${PNG_NAME}/.libs/libpng.so" ]; then \
+		cd ${BUILD_SRC_PATH}/${PNG_NAME}/.libs/; \
+		ln -s libpng$(PNG_LIBVER).so libpng.so; \
+	fi
+
+install:
+	@echo "================ Installing PNG-${PNG_VER}"
+	@mkdir -p ${OUT_DIR}/lib	
+	@mkdir -p ${OUT_DIR}/include/libpng
+	@cp -af ${PNG_LIB_FOLDER}/*so* ${OUT_DIR}/lib
+	@cp -af ${PNG_INC_FOLDER}/* ${OUT_DIR}/include/libpng
+
+clean:
+	@echo "================ MAKE PNG-${PNG_VER} CLEAN "
+	@rm -rf $(PNG_VER_INC)
+	@rm -rf ${BUILD_SRC_PATH}/${PNG_NAME}
+	@rm -rf .$(PNG_NAME)
+	@echo "================ Done"
